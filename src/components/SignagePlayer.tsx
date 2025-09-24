@@ -41,16 +41,37 @@ export default function SignagePlayer() {
   // Add video progress state
   const [videoProgress, setVideoProgress] = useState({ current: 0, duration: 0 });
 
-  // Watermark credits (cycle one at a time)
-  const credits = useMemo(() => [
-    "Madeby.gyanesh AO5K",
-    "Ayan AO5K",
-    "IBaad AO5K",
-    "Huzaifa AO5K",
-    "Engineered By Us • Under the guidance of Muslim Rangwala Sir",
-  ], []);
+  // Watermark (small, light, image-based, rotates lines every few minutes)
+  const WATERMARK_LINES = useMemo(
+    () => [
+      "madeby.gyanesh AO5K",
+      "Ayaan AO5K",
+      "IBaad AO5K",
+      "Huzaifa AO5K",
+      "engineered by Us",
+      "Under The Guidance Of Muslim Rangwala (MIR)",
+    ],
+    []
+  );
   const [wmIndex, setWmIndex] = useState(0);
-  useInterval(() => setWmIndex((i) => (i + 1) % credits.length), 120000); // change every 2 mins
+  const [wmUrl, setWmUrl] = useState("");
+  const makeWatermarkDataUrl = useCallback((text: string) => {
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' width='320' height='64'>
+  <rect width='100%' height='100%' fill='none'/>
+  <g font-family='Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' font-size='18'>
+    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' fill='black' fill-opacity='0.25'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>
+    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' fill='white' fill-opacity='0.6' dy='-0.6'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>
+  </g>
+</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }, []);
+  useEffect(() => {
+    setWmUrl(makeWatermarkDataUrl(WATERMARK_LINES[wmIndex]));
+  }, [wmIndex, WATERMARK_LINES, makeWatermarkDataUrl]);
+  useInterval(() => {
+    setWmIndex((i) => (i + 1) % WATERMARK_LINES.length);
+  }, 120000); // rotate every ~2 minutes
 
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
@@ -728,13 +749,17 @@ export default function SignagePlayer() {
         </div>
       )}
 
+      {/* Watermark overlay (top-right) */}
+      {currentMedia && wmUrl ? (
+        <img
+          src={wmUrl}
+          alt="watermark"
+          className="pointer-events-none select-none absolute top-3 right-3 w-28 max-w-[28vw] opacity-30 mix-blend-overlay"
+          draggable={false}
+        />
+      ) : null}
+
       <div style={powerOffOverlay} />
-      {/* Bottom-right rotating watermark */}
-      <div className="pointer-events-none absolute bottom-3 right-3 z-30 max-w-[48vw]">
-        <div className="bg-black/35 text-white/90 text-[10px] sm:text-xs px-2 py-1 rounded shadow">
-          {credits[wmIndex]}
-        </div>
-      </div>
     </div>
   );
 }
