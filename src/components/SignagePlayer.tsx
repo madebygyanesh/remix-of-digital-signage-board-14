@@ -79,7 +79,7 @@ export default function SignagePlayer() {
   }, [makeWatermarkDataUrl, WATERMARK_LINES, wmIndex]);
   useInterval(() => {
     setWmIndex((i) => (i + 1) % WATERMARK_LINES.length);
-  }, 120000);
+  }, 5000);
 
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
@@ -713,7 +713,7 @@ export default function SignagePlayer() {
             <img
               src={wmUrl}
               alt="watermark"
-              className="pointer-events-none select-none fixed top-3 right-3 w-32 max-w-[30vw] opacity-30 z-[2147483647] drop-shadow-sm"
+              className="pointer-events-none select-none fixed top-3 right-3 w-96 max-w-[45vw] opacity-25 z-[2147483647] drop-shadow-sm"
               draggable={false}
             />,
             document.body
