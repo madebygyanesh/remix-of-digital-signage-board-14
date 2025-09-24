@@ -41,6 +41,17 @@ export default function SignagePlayer() {
   // Add video progress state
   const [videoProgress, setVideoProgress] = useState({ current: 0, duration: 0 });
 
+  // Watermark credits (cycle one at a time)
+  const credits = useMemo(() => [
+    "Madeby.gyanesh AO5K",
+    "Ayan AO5K",
+    "IBaad AO5K",
+    "Huzaifa AO5K",
+    "Engineered By Us • Under the guidance of Muslim Rangwala Sir",
+  ], []);
+  const [wmIndex, setWmIndex] = useState(0);
+  useInterval(() => setWmIndex((i) => (i + 1) % credits.length), 120000); // change every 2 mins
+
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
     try {
@@ -718,6 +729,12 @@ export default function SignagePlayer() {
       )}
 
       <div style={powerOffOverlay} />
+      {/* Bottom-right rotating watermark */}
+      <div className="pointer-events-none absolute bottom-3 right-3 z-30 max-w-[48vw]">
+        <div className="bg-black/35 text-white/90 text-[10px] sm:text-xs px-2 py-1 rounded shadow">
+          {credits[wmIndex]}
+        </div>
+      </div>
     </div>
   );
 }
