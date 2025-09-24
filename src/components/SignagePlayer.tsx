@@ -73,14 +73,13 @@ export default function SignagePlayer() {
 </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }, []);
-  // Initialize watermark once on mount without touching currentMedia (avoids TDZ)
+  // Initialize and rotate watermark lines every few minutes
   useEffect(() => {
-    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
-  }, [makeWatermarkDataUrl]);
-  // Refresh watermark text every 5 seconds using ref (no TDZ)
+    setWmUrl(makeWatermarkDataUrl(WATERMARK_LINES[wmIndex]));
+  }, [makeWatermarkDataUrl, WATERMARK_LINES, wmIndex]);
   useInterval(() => {
-    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
-  }, 5000);
+    setWmIndex((i) => (i + 1) % WATERMARK_LINES.length);
+  }, 120000);
 
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
@@ -294,8 +293,7 @@ export default function SignagePlayer() {
   // After currentMedia is computed, sync its name to ref and update watermark
   useEffect(() => {
     currentMediaNameRef.current = currentMedia?.name || "";
-    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
-  }, [currentMedia?.name, makeWatermarkDataUrl]);
+  }, [currentMedia?.name]);
 
   // If our computed currentIndex differs (due to skipped invalid items), align state index
   useEffect(() => {
@@ -715,7 +713,7 @@ export default function SignagePlayer() {
             <img
               src={wmUrl}
               alt="watermark"
-              className="pointer-events-none select-none fixed top-3 right-3 w-64 max-w-[40vw] opacity-70 z-[2147483647] drop-shadow-lg"
+              className="pointer-events-none select-none fixed top-3 right-3 w-32 max-w-[30vw] opacity-30 z-[2147483647] drop-shadow-sm"
               draggable={false}
             />,
             document.body
