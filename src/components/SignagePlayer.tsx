@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { getActivePlaylist, getCurrentPlay, getDisplaySettings, getMedia, MediaItem, PlaylistItem, Playlist, getPlaylists, saveMedia, savePlaylists, setCurrentPlay, uid, getMediaBlob } from "@/lib/signage";
 import JSZip from "jszip";
 
@@ -44,10 +43,6 @@ export default function SignagePlayer() {
   // Add video progress state
   const [videoProgress, setVideoProgress] = useState({ current: 0, duration: 0 });
 
-  // Mount guard for portal rendering
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-
   // Watermark (small, light, image-based, rotates lines every few minutes)
   const WATERMARK_LINES = useMemo(
     () => [
@@ -63,12 +58,18 @@ export default function SignagePlayer() {
   const [wmIndex, setWmIndex] = useState(0);
   const [wmUrl, setWmUrl] = useState("");
   const makeWatermarkDataUrl = useCallback((text: string) => {
+    const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns='http://www.w3.org/2000/svg' width='320' height='64'>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 100' width='800' height='100' preserveAspectRatio='xMidYMid meet'>
+  <defs>
+    <filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>
+      <feDropShadow dx='0' dy='1' stdDeviation='1.5' flood-color='black' flood-opacity='0.35'/>
+    </filter>
+  </defs>
   <rect width='100%' height='100%' fill='none'/>
-  <g font-family='Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' font-size='18'>
-    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' fill='black' fill-opacity='0.25'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>
-    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' fill='white' fill-opacity='0.6' dy='-0.6'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>
+  <g font-family='Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' font-size='28' filter='url(#shadow)'>
+    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' fill='white' fill-opacity='0.85'
+          lengthAdjust='spacingAndGlyphs' textLength='760'>${safe}</text>
   </g>
 </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -707,18 +708,15 @@ export default function SignagePlayer() {
         </div>
       )}
 
-      {/* Watermark overlay via portal (top-right, above filters/iframes) */}
-      {mounted && currentMedia && wmUrl
-        ? createPortal(
-            <img
-              src={wmUrl}
-              alt="watermark"
-              className="pointer-events-none select-none fixed top-3 right-3 w-96 max-w-[45vw] opacity-25 z-[2147483647] drop-shadow-sm"
-              draggable={false}
-            />,
-            document.body
-          )
-        : null}
+      {/* Watermark overlay moved inside the player container to stay within bounds */}
+      {currentMedia && wmUrl ? (
+        <img
+          src={wmUrl}
+          alt="watermark"
+          className="pointer-events-none select-none absolute top-3 right-3 w-[28rem] max-w-[40%] opacity-25 z-50 drop-shadow-sm"
+          draggable={false}
+        />
+      ) : null}
 
       <div style={powerOffOverlay} />
     </div>
