@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { getActivePlaylist, getCurrentPlay, getDisplaySettings, getMedia, MediaItem, PlaylistItem, Playlist, getPlaylists, saveMedia, savePlaylists, setCurrentPlay, uid, getMediaBlob } from "@/lib/signage";
 import JSZip from "jszip";
 
@@ -40,6 +41,10 @@ export default function SignagePlayer() {
 
   // Add video progress state
   const [videoProgress, setVideoProgress] = useState({ current: 0, duration: 0 });
+
+  // Mount guard for portal rendering
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Watermark (small, light, image-based, rotates lines every few minutes)
   const WATERMARK_LINES = useMemo(
@@ -749,15 +754,18 @@ export default function SignagePlayer() {
         </div>
       )}
 
-      {/* Watermark overlay (top-right) */}
-      {currentMedia && wmUrl ? (
-        <img
-          src={wmUrl}
-          alt="watermark"
-          className="pointer-events-none select-none absolute top-3 right-3 w-28 max-w-[28vw] opacity-30 mix-blend-overlay"
-          draggable={false}
-        />
-      ) : null}
+      {/* Watermark overlay via portal (top-right, above filters/iframes) */}
+      {mounted && currentMedia && wmUrl
+        ? createPortal(
+            <img
+              src={wmUrl}
+              alt="watermark"
+              className="pointer-events-none select-none fixed top-3 right-3 w-36 max-w-[40vw] opacity-70 z-[2147483647] drop-shadow-lg"
+              draggable={false}
+            />,
+            document.body
+          )
+        : null}
 
       <div style={powerOffOverlay} />
     </div>
