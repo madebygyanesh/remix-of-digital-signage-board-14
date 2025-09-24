@@ -30,6 +30,8 @@ export default function SignagePlayer() {
   const nowPlayingBcRef = useRef<BroadcastChannel | null>(null);
   const controlBcRef = useRef<BroadcastChannel | null>(null);
   const deviceIdRef = useRef<string | null>(null);
+  // Ref to hold current media name for watermark updates without TDZ
+  const currentMediaNameRef = useRef<string>("");
 
   // Add states for presentation
   const [slides, setSlides] = useState<string[]>([]);
@@ -71,12 +73,14 @@ export default function SignagePlayer() {
 </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }, []);
+  // Initialize watermark once on mount without touching currentMedia (avoids TDZ)
   useEffect(() => {
-    setWmUrl(makeWatermarkDataUrl(currentMedia?.name || ""));
-  }, [currentMedia?.name, makeWatermarkDataUrl]);
+    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
+  }, [makeWatermarkDataUrl]);
+  // Refresh watermark text every 5 seconds using ref (no TDZ)
   useInterval(() => {
-    setWmUrl(makeWatermarkDataUrl(currentMedia?.name || ""));
-  }, 5000); // refresh watermark text every 5 seconds to reflect current media
+    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
+  }, 5000);
 
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
@@ -286,6 +290,12 @@ export default function SignagePlayer() {
     }
     return { currentIndex: 0, current: undefined, currentMedia: undefined as MediaItem | undefined };
   }, [index, playlistItems, mediaMap, playlistLen]);
+
+  // After currentMedia is computed, sync its name to ref and update watermark
+  useEffect(() => {
+    currentMediaNameRef.current = currentMedia?.name || "";
+    setWmUrl(makeWatermarkDataUrl(currentMediaNameRef.current));
+  }, [currentMedia?.name, makeWatermarkDataUrl]);
 
   // If our computed currentIndex differs (due to skipped invalid items), align state index
   useEffect(() => {
