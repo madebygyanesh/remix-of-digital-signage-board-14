@@ -699,61 +699,6 @@ export default function SignagePlayer() {
         </div>
       )}
 
-      {/* Overlay controls */}
-      {currentMedia && (
-        <div
-          className={`pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-40 transition-opacity ${
-            showControls ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-3 py-2 text-white">
-            <span className="text-xs truncate max-w-[40vw]">{currentMedia.name}</span>
-            <button
-              className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
-              onClick={goPrev}
-              title="Previous"
-            >
-              ‹
-            </button>
-            <button
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
-              onClick={togglePause}
-              title={paused ? "Play" : "Pause"}
-            >
-              {paused ? "▶" : "⏸"}
-            </button>
-            <button
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
-              onClick={goNext}
-              title="Next"
-            >
-              ›
-            </button>
-            {currentMedia.type === "video" && (
-              <>
-                <div className="flex items-center gap-1 text-xs ml-2">
-                  <span>{Math.floor(videoProgress.current)}s</span>
-                  <div className="w-16 h-1 bg-white/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-white transition-all duration-100" 
-                      style={{ width: `${(videoProgress.current / videoProgress.duration) * 100}%` }}
-                    />
-                  </div>
-                  <span>{Math.floor(videoProgress.duration)}s</span>
-                </div>
-                <button
-                  className="inline-flex h-8 px-2 items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
-                  onClick={toggleMute}
-                  title="Toggle mute"
-                >
-                  {videoRef.current?.muted ? '🔇' : '🔊'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Watermark overlay via portal (top-right, above filters/iframes) */}
       {mounted && currentMedia && wmUrl
         ? createPortal(
