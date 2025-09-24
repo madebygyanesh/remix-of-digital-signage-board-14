@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +13,9 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getDisplaySettings, getMedia, getPlaylists, MediaItem, Playlist, saveDisplaySettings, saveMedia, savePlaylists, uid, setCurrentPlay, saveMediaBlob, deleteMediaBlob } from "@/lib/signage";
+import { getDisplaySettings, getMedia, getPlaylists, MediaItem, Playlist, saveDisplaySettings, saveMedia, savePlaylists, uid, setCurrentPlay, saveMediaBlob, deleteMediaBlob, getMediaBlob } from "@/lib/signage";
 import { toast } from "sonner";
-import { Volume, VolumeX, X, Menu, LayoutGrid, List as ListIcon, Play, Trash2, Info, Upload, Plus, Settings, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Power, RotateCw, Sun } from "lucide-react";
+import { Volume, VolumeX, X, Menu, LayoutGrid, List as ListIcon, Play, Trash2, Info, Upload, Plus, Settings, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Power } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 function useLocal<T>(getter: () => T, setter: (val: T) => void) {
@@ -540,6 +542,43 @@ export default function AdminPage() {
   // DISPLAY
   const togglePower = () => setDisplay({ ...display, power: display.power === "on" ? "off" : "on" });
 
+  // Resolve media src (handles local: keys -> object URLs)
+  function useResolvedSrc(src?: string, key?: string) {
+    const [url, setUrl] = useState<string | undefined>(src);
+    useEffect(() => {
+      let toRevoke: string | null = null;
+      let cancelled = false;
+      (async () => {
+        if (!src) {
+          setUrl(undefined);
+          return;
+        }
+        if (src.startsWith("local:") && key) {
+          try {
+            const blob = await getMediaBlob(key);
+            if (!cancelled && blob) {
+              const u = URL.createObjectURL(blob);
+              toRevoke = u;
+              setUrl(u);
+              return;
+            }
+          } catch {}
+        }
+        if (!cancelled) setUrl(src);
+      })();
+      return () => {
+        cancelled = true;
+        if (toRevoke) URL.revokeObjectURL(toRevoke);
+      };
+    }, [src, key]);
+    return url;
+  }
+
+  const ImageThumb: React.FC<{ m: MediaItem; className?: string; alt?: string }> = ({ m, className, alt }) => {
+    const resolved = useResolvedSrc(m.src, m.id);
+    return <img src={resolved || ""} alt={alt ?? m.name} className={className} />;
+  };
+
   if (!authed) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -813,12 +852,14 @@ export default function AdminPage() {
                   {nowPlaying.type === "image" ? (
                     (() => {
                       const mediaItem = media.find(m => m.id === nowPlaying.id);
-                      return (
-                        <img
-                          src={mediaItem?.src || ''}
+                      return mediaItem ? (
+                        <ImageThumb
+                          m={mediaItem}
                           alt={nowPlaying.name}
                           className="h-10 w-16 rounded object-cover border"
                         />
+                      ) : (
+                        <div className="h-10 w-16 rounded border grid place-items-center text-[10px] text-muted-foreground bg-muted">Image</div>
                       );
                     })()
                   ) : (
@@ -925,7 +966,7 @@ export default function AdminPage() {
                       <div key={m.id} draggable onDragStart={(e) => e.dataTransfer.setData("mediaId", m.id)} className="group relative rounded-lg border overflow-hidden bg-card shadow-sm hover:shadow transition-shadow">
                         {/* Thumb */}
                         {m.type === 'image' ? (
-                          <img src={m.src} alt={m.name} className="h-32 w-full object-cover" />
+                          <ImageThumb m={m} className="h-32 w-full object-cover" />
                         ) : (
                            <div className="h-32 w-full grid place-items-center text-xs text-muted-foreground bg-muted">{m.type === 'video' ? 'Video' : m.type === 'presentation' ? 'PPTX' : /\.pdf($|\?)/i.test(m.src || '') ? 'PDF' : 'Web'}</div>
                          )}
