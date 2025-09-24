@@ -72,11 +72,11 @@ export default function SignagePlayer() {
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }, []);
   useEffect(() => {
-    setWmUrl(makeWatermarkDataUrl(WATERMARK_LINES[wmIndex]));
-  }, [wmIndex, WATERMARK_LINES, makeWatermarkDataUrl]);
+    setWmUrl(makeWatermarkDataUrl(currentMedia?.name || ""));
+  }, [currentMedia?.name, makeWatermarkDataUrl]);
   useInterval(() => {
-    setWmIndex((i) => (i + 1) % WATERMARK_LINES.length);
-  }, 120000); // rotate every ~2 minutes
+    setWmUrl(makeWatermarkDataUrl(currentMedia?.name || ""));
+  }, 5000); // refresh watermark text every 5 seconds to reflect current media
 
   // Device ID + heartbeat (persistent per-browser tab)
   useEffect(() => {
@@ -705,7 +705,7 @@ export default function SignagePlayer() {
             <img
               src={wmUrl}
               alt="watermark"
-              className="pointer-events-none select-none fixed top-3 right-3 w-36 max-w-[40vw] opacity-70 z-[2147483647] drop-shadow-lg"
+              className="pointer-events-none select-none fixed top-3 right-3 w-64 max-w-[40vw] opacity-70 z-[2147483647] drop-shadow-lg"
               draggable={false}
             />,
             document.body
